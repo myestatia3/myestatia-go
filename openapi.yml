@@ -1,0 +1,1022 @@
+openapi: 3.1.0
+info:
+  title: MyEstatia AI CRM API
+  version: "1.1.0"
+  description: |
+    API for managing leads, AI-agent communication, companies, properties and system configuration.
+
+servers:
+  - url: TODEFINE
+    description: Production
+  - url: http://localhost:8080/api/v1
+    description: Local development
+
+tags:
+  - name: Leads
+    description: Lead management operations
+  - name: Conversations
+    description: Interactions between AI, Lead, and Agent
+  - name: Summaries
+    description: Conversation summaries
+  - name: Properties 
+    description: Properties management
+  - name: Companies
+    description: Company management
+  - name: Config
+    description: System configuration
+
+paths:
+
+  /leads:
+    get: #DONE
+      summary: List all leads
+      tags: [Leads]
+      responses:
+        "200":
+          description: List of leads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Lead"
+
+    post: #DONE
+      summary: Create a new lead
+      tags: [Leads]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewLead"
+      responses:
+        "201":
+          description: Lead successfully created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lead"
+
+  /leads/{id}:
+    get: #DONE
+      summary: Get detailed information for a specific lead
+      tags: [Leads]
+      parameters:
+        - $ref: "#/components/parameters/UUID"
+      responses:
+        "200":
+          description: Lead found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lead"
+        "404":
+          description: Lead not found
+
+  /leads/byproperty/{propertyId}:
+    get: #DONE
+      tags: [lead]
+      summary: Get list of leads that may be interested in a property based on its characteristics
+      description: >
+        Filters leads by parameters such as number of rooms, budget, or parking availability.
+      parameters:
+        - $ref: "#/components/parameters/UUID"
+      responses:
+        '200':
+          description: Filtered list of leads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Lead'
+             
+  /leads/bycompany/{companyId}:
+    get: #DONE
+      tags: [lead]
+      summary: Get list of leads created by a company
+      description: >
+        Filters leads by parameters such as number of rooms, budget, or parking availability.
+      parameters:
+        - $ref: "#/components/parameters/UUID"
+      responses:
+        '200':
+          description: Filtered list of leads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Lead'
+
+  /lead/{id}/conversations:
+    get: #TODO
+      tags: [lead]
+      summary: Retrieve conversations for a lead
+      parameters:
+        - $ref: "#/components/parameters/UUID"
+      responses:
+        '200':
+          description: List of conversations for the lead
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Conversation'
+        '404':
+          description: Lead not found
+
+  /lead/{id}/contactai: # This will be implemented later, handled through NATS (NATS.io)
+    post:
+      tags: [lead]
+      summary: Contact the lead using AI
+      description: Triggers an automated AI-driven contact flow for the specified lead.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Lead ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactAIRequest'
+      responses:
+        '200':
+          description: Result of the AI-based contact attempt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactAIResponse'
+        '404':
+          description: Lead not found
+
+
+
+  /conversations/{leadId}/messages:
+    post: #TODO
+      summary: Register a new message (AI, Lead, or Agent)
+      tags: [Conversations]
+      parameters:
+        - $ref: "#/components/parameters/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "200":
+          description: Message processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /summaries/{leadId}: 
+    get:
+      summary: Retrieve the conversation summary for a lead
+      tags: [Summaries]
+      parameters:
+        - $ref: "#/components/parameters/UUID"
+      responses:
+        "200":
+          description: Summary retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Summary"
+        "404":
+          description: No summary available
+
+  /companies: #DONE
+    get: #DONE
+      summary: List all companies
+      tags: [Companies]
+      responses:
+        "200":
+          description: List of companies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Company"
+
+    post: #DONE
+      summary: Create a new company
+      tags: [Companies]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewCompany"
+      responses:
+        "201":
+          description: Company created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Company"
+
+  /companies/{id}: #DONE
+    get: #DONE
+      summary: Get company by ID
+      tags: [Companies]
+      parameters:
+        - $ref: "#/components/parameters/UUID"
+      responses:
+        "200":
+          description: Company found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Company"
+        "404":
+          description: Company not found
+
+    put: #DONE
+      summary: Update existing company (partial update allowed)
+      tags: [Companies]
+      parameters:
+        - $ref: "#/components/parameters/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCompany"
+      responses:
+        "200":
+          description: Company updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Company"
+
+    delete: #DONE
+      summary: Delete a company
+      tags: [Companies]
+      parameters:
+        - $ref: "#/components/parameters/UUID"
+      responses:
+        "204":
+          description: Company deleted
+
+  /properties: #DONE
+    post:
+      summary: Create a new property
+      tags: [Properties]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewProperty"
+      responses:
+        "201":
+          description: Property created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Property"
+
+  /properties/{id}: #DONE
+    get: #DONE
+      summary: Get property by ID
+      tags: [Properties]
+      parameters:
+        - $ref: "#/components/parameters/UUID"
+      responses:
+        "200":
+          description: Property retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Property"
+        "404":
+          description: Not found
+
+    delete: #DONE
+      summary: Delete property
+      tags: [Properties]
+      parameters:
+        - $ref: "#/components/parameters/UUID"
+      responses:
+        "204":
+          description: Property deleted
+
+  /properties/{company_id}/companies:  #DONE
+    get:  #DONE
+      summary: List all properties belonging to a company
+      tags: [Properties]
+      parameters:
+        - $ref: "#/components/parameters/UUID"
+      responses:
+        "200":
+          description: List of properties for a company
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Property"
+
+  /properties/search: #DONE
+    get:
+      tags: [property]
+      summary: Get a list of filtered properties with pagination
+      description: >
+        Filters properties based on multiple criteria with pagination and offset.
+      parameters:
+        # --- Pagination ---
+        - name: page
+          in: query
+          required: false
+          description: Page number (defaults to 1)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          description: Items per page (defaults to 10)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: minRooms
+          in: query
+          required: false
+          description: Minimum number of rooms
+          schema:
+            type: integer
+            minimum: 0
+        - name: maxRooms
+          in: query
+          required: false
+          description: Maximum number of rooms
+          schema:
+            type: integer
+            minimum: 0
+        - name: minBudget
+          in: query
+          required: false
+          description: Minimum price
+          schema:
+            type: number
+            format: float
+        - name: maxBudget
+          in: query
+          required: false
+          description: Maximum price
+          schema:
+            type: number
+            format: float
+        - name: minArea
+          in: query
+          required: false
+          description: Minimum area in m2
+          schema:
+            type: integer
+        - name: maxArea
+          in: query
+          required: false
+          description: Maximum area in m2
+          schema:
+            type: integer   
+        - name: province
+          in: query
+          required: false
+          description: Search by province (partial match)
+          schema:
+            type: string
+        - name: address
+          in: query
+          required: false
+          description: Search by address (partial match)
+          schema:
+            type: string
+        - name: parking
+          in: query
+          required: false
+          description: Indicates whether a parking space is required
+          schema:
+            type: boolean
+            
+      responses:
+        '200':
+          description: List of filtered properties
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Property'
+
+  /sync/lead/{id}: # synchronize a lead with its related properties (intermediate table: lead_id + property_id) ->
+    post: #TODO
+      tags: [sync]
+      summary: Remove all preferences for the lead and recreate them
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Lead ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lead found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '404':
+          description: Lead not found
+
+    delete: #TODO
+      tags: [sync]
+      summary: Delete all preferences for a lead
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Lead ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lead found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '404':
+          description: Lead not found
+
+  /sync/property/{id}: # when a new property arrives, check users and add it to their "interested" list
+    post: #TODO
+      tags: [sync]
+      summary: Add a new property and create preferences associated with it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Property ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Property found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '404':
+          description: Property not found  
+
+    delete: #TODO
+      tags: [sync]
+      summary: Remove a property and delete all preferences associated with it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Property ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Property found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+        '404':
+          description: Property not found
+
+
+  /agents:  #DONE
+      get: #DONE
+        summary: List all agents
+        tags: [Agents]
+        responses:
+          "200":
+            description: List of agents
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/Agent"
+
+      post: #DONE
+        summary: Create a new Agent
+        tags: [Agents]
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewAgent"
+        responses:
+          "201":
+            description: Agent created
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/Agent"
+
+  /agents/{id}:  #DONE
+    get: #DONE
+      summary: Get agent by ID
+      tags: [Agents]
+      parameters:
+        - $ref: "#/components/parameters/UUID"
+      responses:
+        "200":
+          description: Agent found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agent"
+        "404":
+          description: Agent not found
+
+    put: #DONE
+      summary: Update existing agent (partial update allowed)
+      tags: [Agents]
+      parameters:
+        - $ref: "#/components/parameters/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAgent"
+      responses:
+        "200":
+          description: Agent updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agent"
+
+    delete: #DONE
+      summary: Delete a Agent
+      tags: [Agents]
+      parameters:
+        - $ref: "#/components/parameters/UUID"
+      responses:
+        "204":
+          description: Agent deleted
+  /config: #TODO -> BUT TO DECIDE, NOT DO YET
+    get:
+      summary: Get current AI and follow-up configuration
+      tags: [Config]
+      responses:
+        "200":
+          description: Current configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemConfig"
+
+    patch:
+      summary: Update AI or follow-up timing configuration
+      tags: [Config]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateConfig"
+      responses:
+        "200":
+          description: Configuration updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemConfig"
+
+components:
+
+  parameters:
+    UUID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+
+  schemas:
+
+    Company:
+      type: object
+      required: [id, name, city, email1]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        address:
+          type: string
+        postal_code:
+          type: string
+        city:
+          type: string
+        province:
+          type: string
+        country:
+          type: string
+        office_location:
+          type: string
+        contact_person:
+          type: string
+        email1:
+          type: string
+          format: email
+        email2:
+          type: string
+          format: email
+        phone1:
+          type: string
+        phone2:
+          type: string
+        website:
+          type: string
+        page_link:
+          type: string
+        web_developer:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    NewCompany:
+      type: object
+      required: [name, city, email1]
+      properties:
+        name:
+          type: string
+        city:
+          type: string
+        email1:
+          type: string
+          format: email
+
+    UpdateCompany:
+      type: object
+      description: Partial update model for companies
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        postal_code:
+          type: string
+        city:
+          type: string
+        province:
+          type: string
+        country:
+          type: string
+        office_location:
+          type: string
+        contact_person:
+          type: string
+        email1:
+          type: string
+          format: email
+        email2:
+          type: string
+          format: email
+        phone1:
+          type: string
+        phone2:
+          type: string
+        website:
+          type: string
+        page_link:
+          type: string
+        web_developer:
+          type: string
+
+
+    Property:
+      type: object
+      required: [id, reference, company_id]
+      properties:
+        id:
+          type: string
+          format: uuid
+        reference:
+          type: string
+        company_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        address:
+          type: string
+        rooms:
+          type: integer
+        price:
+          type: number
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    NewProperty:
+      type: object
+      required:
+        - reference
+        - company_id
+      properties:
+        reference:
+          type: string
+        company_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        price:
+          type: number
+        rooms:
+          type: integer
+        address:
+          type: string
+        description:
+          type: string
+
+    Lead:
+      type: object
+      required: [id, name, email]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        rooms:
+          type: integer
+        budget:
+          type: number
+        parking:
+          type: boolean
+        status:
+          type: string
+        companyId: 
+          type: string 
+          format: uuid
+        propertyId: 
+          type: string 
+          format: uuid
+        assignedAgent:
+          type: string
+        lastInteraction:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    NewLead:
+      type: object
+      required: [name, email]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        rooms:
+          type: integer
+        budget:
+          type: number
+        parking:
+          type: boolean
+        source:
+          type: string
+
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        leadId:
+          type: string
+          example: "lead_123"
+        channel:
+          type: string
+          example: "email"
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        createdAt:
+          type: string
+          format: date-time
+
+    MessageInput:
+      type: object
+      required: [senderType, content]
+      properties:
+        senderType:
+          type: string
+        content:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    Message:
+      type: object
+      properties:
+        from:
+          type: string
+          example: "agent"
+        timestamp:
+          type: string
+          format: date-time
+        content:
+          type: string
+          example: "Hola, ¿sigues interesado en la propiedad?"
+        success:
+          type: boolean
+
+    Summary:
+      type: object
+      properties:
+        leadId:
+          type: string
+          format: uuid
+        lastUpdated:
+          type: string
+          format: date-time
+        summaryText:
+          type: string
+        nextAction:
+          type: string
+
+    SystemConfig:
+      type: object
+      properties:
+        aiObjective:
+          type: string
+        followupIntervalMinutes:
+          type: integer
+        autoReplyEnabled:
+          type: boolean
+
+    UpdateConfig:
+      type: object
+      properties:
+        aiObjective:
+          type: string
+        followupIntervalMinutes:
+          type: integer
+        autoReplyEnabled:
+          type: boolean
+
+    
+    ContactAIRequest:
+      type: object
+      properties:
+        channel:
+          type: string
+          description: Preferred channel for contacting the lead
+          example: "email"
+        messageTemplate:
+          type: string
+          description: Message template to be used by the AI
+          example: "Hello {{name}}, regarding the {{rooms}}-room apartment..."
+      required:
+        - channel
+
+    ContactAIResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "queued"
+        detail:
+          type: string
+          example: "AI contact has been queued for delivery."
+        leadId:
+          type: string
+          example: "lead_123"
+
+    Agent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a4b1f6c8-2c3e-4e6a-9f5d-123456789abc"
+        name:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          example: "john.doe@agency.com"
+        phone:
+          type: string
+          example: "+34911222333"
+        companyId:
+          type: string
+          format: uuid
+          example: "f123e456-7890-4abc-def1-234567890abc"
+        propertiesIds:
+          type: array
+          description: List of property UUIDs assigned to this agent
+          items:
+            type: string
+            format: uuid
+            example: "[cdef1234-5678-90ab-cdef-1234567890ab]"
+      required:
+        - id
+        - name
+        - email
+        - companyId
+    
+    NewAgent:
+      type: object
+      required: [name, email, companyId]
+      properties:
+        name:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          example: "john.doe@agency.com"
+        phone:
+          type: string
+          example: "+34911222333"
+        companyId:
+          type: string
+          format: uuid
+          example: "f123e456-7890-4abc-def1-234567890abc"
+        propertiesIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          example:
+            - "cdef1234-5678-90ab-cdef-1234567890ab"
+            - "aabbccdd-1122-3344-5566-77889900aabb"
+
+    UpdateAgent:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          example: "john.doe@agency.com"
+        phone:
+          type: string
+          example: "+34911222333"
+        companyId:
+          type: string
+          format: uuid
+          example: "f123e456-7890-4abc-def1-234567890abc"
+        propertiesIds:
+          type: array
+          description: List of property UUIDs assigned to this agent
+          items:
+            type: string
+            format: uuid
+            example: "[cdef1234-5678-90ab-cdef-1234567890ab]"
+
+
+
+
+
