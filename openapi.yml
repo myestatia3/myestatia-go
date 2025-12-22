@@ -743,6 +743,31 @@ components:
         created_at:
           type: string
           format: date-time
+        image:
+          type: string
+          example: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=600&fit=crop"
+        area:
+          type: integer
+          example: 180
+        bathrooms:
+          type: integer
+          example: 2
+        status:
+          type: string
+          example: "Disponible"
+        source:
+          type: string
+          example: "Propio"
+        compatibleLeadsCount:
+          type: integer
+          readOnly: true
+          example: 8
+        isNew:
+          type: boolean
+          example: true
+        zone:
+          type: string
+          example: "Nueva Andalucía"
 
     NewProperty:
       type: object
@@ -798,6 +823,25 @@ components:
         lastInteraction:
           type: string
           format: date-time
+        language:
+          type: string
+          example: "ES"
+        source:
+          type: string
+          example: "Portal"
+        zone:
+          type: string
+          example: "Nueva Andalucía"
+        propertyType:
+          type: string
+          example: "Villa"
+        channel:
+          type: string
+          example: "WhatsApp"
+        suggestedPropertiesCount:
+          type: integer
+          readOnly: true
+          example: 3
         createdAt:
           type: string
           format: date-time
@@ -836,35 +880,6 @@ components:
         messages:
           type: array
           items:
-            $ref: '#/components/schemas/Message'
-        createdAt:
-          type: string
-          format: date-time
-
-    MessageInput:
-      type: object
-      required: [senderType, content]
-      properties:
-        senderType:
-          type: string
-        content:
-          type: string
-        timestamp:
-          type: string
-          format: date-time
-
-    Message:
-      type: object
-      properties:
-        from:
-          type: string
-          example: "agent"
-        timestamp:
-          type: string
-          format: date-time
-        content:
-          type: string
-          example: "Hola, ¿sigues interesado en la propiedad?"
         success:
           type: boolean
 

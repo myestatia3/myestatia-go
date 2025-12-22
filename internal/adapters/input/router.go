@@ -4,45 +4,65 @@ import (
 	"net/http"
 
 	"github.com/myestatia/myestatia-go/internal/adapters/input/handler"
+	"github.com/myestatia/myestatia-go/internal/adapters/input/middleware"
 )
 
-func NewRouter(leadHandler *handler.LeadHandler, propertyHandler *handler.PropertyHandler, companyHandler *handler.CompanyHandler, agentHandler *handler.AgentHandler) http.Handler {
+func NewRouter(
+	leadHandler *handler.LeadHandler,
+	propertyHandler *handler.PropertyHandler,
+	companyHandler *handler.CompanyHandler,
+	agentHandler *handler.AgentHandler,
+	messageHandler *handler.MessageHandler,
+	authHandler *handler.AuthHandler,
+) http.Handler {
 	mux := http.NewServeMux()
 
-	// CRUD Leads
-	mux.HandleFunc("POST /api/v1/leads", leadHandler.CreateLead)
-	mux.HandleFunc("GET /api/v1/leads", leadHandler.GetAllLeads)
-	mux.HandleFunc("GET /api/v1/leads/{id}", leadHandler.GetLeadByID)
-	mux.HandleFunc("PUT /api/v1/leads/{id}", leadHandler.UpdateLead)
-	mux.HandleFunc("DELETE /api/v1/leads/{id}", leadHandler.DeleteLead)
-	mux.HandleFunc("GET /api/v1/leads/bycompany/{companyId}", leadHandler.GetLeadByCompanyId)
-	mux.HandleFunc("GET /api/v1/leads/byproperty/{propertyId}", leadHandler.GetLeadByPropertyId)
+	// Auth
+	mux.HandleFunc("POST /api/v1/auth/register", authHandler.Register)
+	mux.HandleFunc("POST /api/v1/auth/login", authHandler.Login)
 
-	//Property search filters
-	mux.HandleFunc("GET /api/v1/properties/search", propertyHandler.SearchProperties)
+	// Helper to protect routes
+	protected := func(h http.HandlerFunc) http.Handler {
+		return middleware.AuthMiddleware(h)
+	}
+
+	// CRUD Leads
+	mux.Handle("POST /api/v1/leads", protected(leadHandler.CreateLead))
+	mux.Handle("GET /api/v1/leads", protected(leadHandler.GetAllLeads))
+	mux.Handle("GET /api/v1/leads/{id}", protected(leadHandler.GetLeadByID))
+	mux.Handle("PUT /api/v1/leads/{id}", protected(leadHandler.UpdateLead))
+	mux.Handle("DELETE /api/v1/leads/{id}", protected(leadHandler.DeleteLead))
+	mux.Handle("GET /api/v1/leads/bycompany/{companyId}", protected(leadHandler.GetLeadByCompanyId))
+	mux.Handle("GET /api/v1/leads/byproperty/{propertyId}", protected(leadHandler.GetLeadByPropertyId))
+
+	//Property search filters (Public? Or Protected? Let's protect for now to enforce users)
+	mux.Handle("GET /api/v1/properties/search", protected(propertyHandler.SearchProperties))
+
 	// CRUD Property
-	mux.HandleFunc("POST /api/v1/properties", propertyHandler.CreateProperty)
-	mux.HandleFunc("GET /api/v1/properties", propertyHandler.GetAllProperties)
-	mux.HandleFunc("GET /api/v1/properties/{id}", propertyHandler.GetPropertyByID)
-	mux.HandleFunc("PUT /api/v1/properties/{id}", propertyHandler.UpdateProperty)
-	mux.HandleFunc("DELETE /api/v1/properties/{id}", propertyHandler.DeleteProperty)
-	mux.HandleFunc("GET /api/v1/properties/company/{company_id}", propertyHandler.GetPropertiesByCompany)
+	mux.Handle("POST /api/v1/properties", protected(propertyHandler.CreateProperty))
+	mux.Handle("GET /api/v1/properties", protected(propertyHandler.GetAllProperties))
+	mux.Handle("GET /api/v1/properties/{id}", protected(propertyHandler.GetPropertyByID))
+	mux.Handle("PUT /api/v1/properties/{id}", protected(propertyHandler.UpdateProperty))
+	mux.Handle("DELETE /api/v1/properties/{id}", protected(propertyHandler.DeleteProperty))
+	mux.Handle("GET /api/v1/properties/company/{company_id}", protected(propertyHandler.GetPropertiesByCompany))
 
 	//CRUD Company
-
-	mux.HandleFunc("POST /api/v1/companies", companyHandler.CreateCompany)
-	mux.HandleFunc("GET /api/v1/companies", companyHandler.GetAllCompanies)
-	mux.HandleFunc("GET /api/v1/companies/{id}", companyHandler.GetCompanyByID)
-	mux.HandleFunc("PUT /api/v1/companies/{id}", companyHandler.UpdateCompany)
-	mux.HandleFunc("DELETE /api/v1/companies/{id}", companyHandler.DeleteCompany)
+	mux.Handle("POST /api/v1/companies", protected(companyHandler.CreateCompany))
+	mux.Handle("GET /api/v1/companies", protected(companyHandler.GetAllCompanies))
+	mux.Handle("GET /api/v1/companies/{id}", protected(companyHandler.GetCompanyByID))
+	mux.Handle("PUT /api/v1/companies/{id}", protected(companyHandler.UpdateCompany))
+	mux.Handle("DELETE /api/v1/companies/{id}", protected(companyHandler.DeleteCompany))
 
 	//CRUD Agent
+	mux.Handle("POST /api/v1/agents", protected(agentHandler.CreateAgent))
+	mux.Handle("GET /api/v1/agents", protected(agentHandler.GetAllAgents))
+	mux.Handle("GET /api/v1/agents/{id}", protected(agentHandler.GetAgentByID))
+	mux.Handle("PUT /api/v1/agents/{id}", protected(agentHandler.UpdateAgent))
+	mux.Handle("DELETE /api/v1/agents/{id}", protected(agentHandler.DeleteAgent))
 
-	mux.HandleFunc("POST /api/v1/agents", agentHandler.CreateAgent)
-	mux.HandleFunc("GET /api/v1/agents", agentHandler.GetAllAgents)
-	mux.HandleFunc("GET /api/v1/agents/{id}", agentHandler.GetAgentByID)
-	mux.HandleFunc("PUT /api/v1/agents/{id}", agentHandler.UpdateAgent)
-	mux.HandleFunc("DELETE /api/v1/agents/{id}", agentHandler.DeleteAgent)
+	// Conversations
+	mux.Handle("GET /api/v1/lead/{id}/conversations", protected(messageHandler.GetConversations))
+	mux.Handle("POST /api/v1/conversations/{leadId}/messages", protected(messageHandler.SendMessage))
 
 	return mux
 }

@@ -12,6 +12,9 @@ type Agent struct {
 	Email string `gorm:"not null" json:"email"`
 	Phone string `json:"phone"`
 
+	Password string `gorm:"not null" json:"-"`
+	Role     string `gorm:"default:'agent'" json:"role"`
+
 	CompanyID string   `gorm:"type:uuid;not null;index" json:"company_id"`
 	Company   *Company `gorm:"foreignKey:CompanyID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT" json:"company,omitempty"`
 

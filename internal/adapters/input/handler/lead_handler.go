@@ -25,14 +25,36 @@ func (h *LeadHandler) CreateLead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req entity.Lead
+	var req struct {
+		Name       string `json:"name"`
+		Email      string `json:"email"`
+		Phone      string `json:"phone"`
+		Language   string `json:"language"`
+		Source     string `json:"source"`
+		PropertyID string `json:"propertyId"`
+	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
 	}
 
-	createdLead, created, err := h.Service.Create(context.Background(), &req)
+	var propertyID *string
+	if req.PropertyID != "" {
+		propertyID = &req.PropertyID
+	}
+
+	lead := &entity.Lead{
+		Name:       req.Name,
+		Email:      req.Email,
+		Phone:      req.Phone,
+		Language:   req.Language,
+		Source:     req.Source,
+		PropertyID: propertyID,
+		CompanyID:  "ecf4ed64-06b5-4129-af4e-72718751e087", // Demo Tenant ID
+	}
+
+	createdLead, created, err := h.Service.Create(context.Background(), lead)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -105,9 +127,13 @@ func (h *LeadHandler) UpdateLead(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Name  string `json:"name"`
-		Email string `json:"email"`
-		Phone string `phone:"phone"`
+		Name         string  `json:"name"`
+		Email        string  `json:"email"`
+		Phone        string  `json:"phone"`
+		Language     string  `json:"language"`
+		Budget       float64 `json:"budget"`
+		Zone         string  `json:"zone"`
+		PropertyType string  `json:"propertyType"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid json", http.StatusBadRequest)
@@ -115,10 +141,14 @@ func (h *LeadHandler) UpdateLead(w http.ResponseWriter, r *http.Request) {
 	}
 
 	lead := &entity.Lead{
-		ID:    id,
-		Name:  req.Name,
-		Email: req.Email,
-		Phone: req.Phone,
+		ID:           id,
+		Name:         req.Name,
+		Email:        req.Email,
+		Phone:        req.Phone,
+		Language:     req.Language,
+		Budget:       req.Budget,
+		Zone:         req.Zone,
+		PropertyType: req.PropertyType,
 	}
 	if err := h.Service.Update(context.Background(), lead); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

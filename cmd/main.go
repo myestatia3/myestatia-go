@@ -6,6 +6,7 @@ import (
 
 	router "github.com/myestatia/myestatia-go/internal/adapters/input"
 	handlers "github.com/myestatia/myestatia-go/internal/adapters/input/handler"
+	"github.com/myestatia/myestatia-go/internal/adapters/input/middleware"
 	"github.com/myestatia/myestatia-go/internal/application/service"
 	entity "github.com/myestatia/myestatia-go/internal/domain/entity"
 	database "github.com/myestatia/myestatia-go/internal/infrastructure/database"
@@ -37,6 +38,7 @@ func main() {
 		&entity.Property{},
 		&entity.SystemConfig{},
 		&entity.Agent{},
+		&entity.Company{},
 	)
 	if err != nil {
 		log.Fatalf("Error migrating database: %v", err)
@@ -60,9 +62,18 @@ func main() {
 	agentService := service.NewAgentService(agentRepo, propertyRepo)
 	agentHandler := handlers.NewAgentHandler(agentService)
 
-	mux := router.NewRouter(leadHandler, propertyHandler, companyHandler, agentHandler)
+	messageRepo := repository.NewMessageRepository(db)
+	messageService := service.NewMessageService(messageRepo)
+	messageHandler := handlers.NewMessageHandler(messageService)
 
-	addr := ":3000"
+	authHandler := handlers.NewAuthHandler(agentService, companyService)
+
+	mux := router.NewRouter(leadHandler, propertyHandler, companyHandler, agentHandler, messageHandler, authHandler)
+
+	// Wrap the router with CORS middleware
+	handler := middleware.CorsMiddleware(mux)
+
+	addr := ":8080"
 	log.Printf("listening on %s", addr)
-	log.Fatal(http.ListenAndServe(addr, mux))
+	log.Fatal(http.ListenAndServe(addr, handler))
 }

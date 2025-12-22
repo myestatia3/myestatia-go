@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
 	"github.com/myestatia/myestatia-go/internal/domain/entity"
 	"github.com/myestatia/myestatia-go/internal/infrastructure/repository"
-	"github.com/google/uuid"
 )
 
 type AgentService struct {
@@ -59,6 +59,10 @@ func (s *AgentService) UpdatePartial(ctx context.Context, id string, fields map[
 		return errors.New("missing agent ID")
 	}
 	return s.Repo.UpdatePartial(ctx, id, fields)
+}
+
+func (s *AgentService) GetByEmail(ctx context.Context, email string) (*entity.Agent, error) {
+	return s.Repo.FindByEmail(ctx, email)
 }
 
 func (s *AgentService) Delete(ctx context.Context, id string) error {
