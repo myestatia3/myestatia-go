@@ -46,12 +46,21 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 0. Check if agent exists
+	existingAgent, _ := h.agentService.GetByEmail(r.Context(), req.Email)
+	if existingAgent != nil {
+		http.Error(w, "User with this email already exists", http.StatusConflict)
+		return
+	}
+
 	// 1. Create Company
 	company := &entity.Company{
-		Name: req.CompanyName,
+		Name:   req.CompanyName,
+		Email1: req.Email, // Ensure required field Email1 is set (using agent email as fallback)
 	}
-	// Assuming CompanyService has Create method. Check next step.
-	if _, _, err := h.companyService.Create(r.Context(), company); err != nil {
+	// Capture the returned company which has the ID (whether verified existing or newly created)
+	createdCompany, _, err := h.companyService.Create(r.Context(), company)
+	if err != nil {
 		http.Error(w, "Failed to create company: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -69,7 +78,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Email:     req.Email,
 		Password:  string(hashedPassword),
 		Role:      "admin", // First user is admin
-		CompanyID: company.ID,
+		CompanyID: createdCompany.ID,
 	}
 
 	if _, _, err := h.agentService.Create(r.Context(), agent); err != nil {

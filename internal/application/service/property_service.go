@@ -65,3 +65,7 @@ func (s *PropertyService) FindAllByCompanyID(ctx context.Context, companyID stri
 func (s *PropertyService) SearchProperties(ctx context.Context, filter entity.PropertyFilter) ([]entity.Property, error) {
 	return s.repo.Search(ctx, filter)
 }
+
+func (s *PropertyService) ListSubtypes(ctx context.Context, propertyType string) ([]entity.PropertySubtype, error) {
+	return s.repo.FindSubtypes(ctx, propertyType)
+}

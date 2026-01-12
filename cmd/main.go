@@ -11,6 +11,8 @@ import (
 	entity "github.com/myestatia/myestatia-go/internal/domain/entity"
 	database "github.com/myestatia/myestatia-go/internal/infrastructure/database"
 	repository "github.com/myestatia/myestatia-go/internal/infrastructure/repository"
+	"github.com/myestatia/myestatia-go/internal/infrastructure/seed"
+	"github.com/myestatia/myestatia-go/internal/infrastructure/storage"
 )
 
 func main() {
@@ -46,13 +48,16 @@ func main() {
 
 	log.Println("Database migrated successfully")
 
+	if err := seed.SeedPropertySubtypes(db); err != nil {
+		log.Printf("Error seeding subtypes: %v", err)
+	}
+
 	leadRepo := repository.NewLeadRepository(db)
 	leadSvc := service.NewLeadService(leadRepo)
 	leadHandler := handlers.NewLeadHandler(leadSvc)
 
 	propertyRepo := repository.NewPropertyRepository(db)
 	propertyService := service.NewPropertyService(propertyRepo)
-	propertyHandler := handlers.NewPropertyHandler(propertyService)
 
 	companyRepo := repository.NewCompanyRepository(db)
 	companyService := service.NewCompanyService(companyRepo)
@@ -61,6 +66,10 @@ func main() {
 	agentRepo := repository.NewAgentRepository(db)
 	agentService := service.NewAgentService(agentRepo, propertyRepo)
 	agentHandler := handlers.NewAgentHandler(agentService)
+
+	// Storage
+	storageService := storage.NewLocalStorageService("uploads", "http://localhost:8080/uploads")
+	propertyHandler := handlers.NewPropertyHandler(propertyService, agentService, companyService, storageService)
 
 	messageRepo := repository.NewMessageRepository(db)
 	messageService := service.NewMessageService(messageRepo)
@@ -71,9 +80,18 @@ func main() {
 	mux := router.NewRouter(leadHandler, propertyHandler, companyHandler, agentHandler, messageHandler, authHandler)
 
 	// Wrap the router with CORS middleware
-	handler := middleware.CorsMiddleware(mux)
+	// Add static file handler for uploads
+	fileServer := http.StripPrefix("/uploads", http.FileServer(http.Dir("uploads")))
+
+	finalHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "" && len(r.URL.Path) > 8 && r.URL.Path[:8] == "/uploads" {
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+		middleware.CorsMiddleware(mux).ServeHTTP(w, r)
+	})
 
 	addr := ":8080"
 	log.Printf("listening on %s", addr)
-	log.Fatal(http.ListenAndServe(addr, handler))
+	log.Fatal(http.ListenAndServe(addr, finalHandler))
 }

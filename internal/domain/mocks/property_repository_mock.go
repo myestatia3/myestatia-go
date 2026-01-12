@@ -56,3 +56,8 @@ func (m *PropertyRepositoryMock) Search(ctx context.Context, filter entity.Prope
 	args := m.Called(ctx, filter)
 	return args.Get(0).([]entity.Property), args.Error(1)
 }
+
+func (m *PropertyRepositoryMock) FindSubtypes(ctx context.Context, propertyType string) ([]entity.PropertySubtype, error) {
+	args := m.Called(ctx, propertyType)
+	return args.Get(0).([]entity.PropertySubtype), args.Error(1)
+}

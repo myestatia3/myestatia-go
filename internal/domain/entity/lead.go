@@ -31,11 +31,12 @@ type Lead struct {
 	// New fields for Frontend integration
 	Language                 string  `gorm:"type:varchar(10);default:'es'" json:"language"`
 	Source                   string  `gorm:"type:varchar(50)" json:"source"`
-	Budget                   float64 `json:"budget"`
-	Zone                     string  `json:"zone"`
-	PropertyType             string  `json:"propertyType"`
+	Budget                   float64 `gorm:"type:numeric(15,2)" json:"budget"`
+	Zone                     string  `gorm:"type:varchar(100)" json:"zone"`
+	PropertyType             string  `gorm:"type:varchar(50)" json:"propertyType"`
 	Channel                  string  `json:"channel"`
 	SuggestedPropertiesCount int     `json:"suggestedPropertiesCount"`
+	Notes                    string  `json:"notes"`
 
 	Messages  []Message `gorm:"foreignKey:LeadID" json:"messages,omitempty"`
 	Summaries []Summary `gorm:"foreignKey:LeadID" json:"summaries,omitempty"`

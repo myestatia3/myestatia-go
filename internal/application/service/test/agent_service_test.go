@@ -23,10 +23,8 @@ func TestCreateAgent(t *testing.T) {
 		Name:  "Test Agent",
 	}
 
-	// Mocking behavior
-	// 1. FindByEmail returns nil (agent does not exist)
+
 	mockAgentRepo.On("FindByEmail", ctx, "agent@test.com").Return(nil, nil)
-	// 2. Create is called and returns no error
 	mockAgentRepo.On("Create", mock.MatchedBy(func(a *entity.Agent) bool {
 		return a.Email == "agent@test.com" && a.ID != ""
 	})).Return(nil)

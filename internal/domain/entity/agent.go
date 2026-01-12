@@ -9,7 +9,7 @@ import (
 type Agent struct {
 	ID    string `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
 	Name  string `gorm:"not null" json:"name"`
-	Email string `gorm:"not null" json:"email"`
+	Email string `gorm:"not null;uniqueIndex" json:"email"`
 	Phone string `json:"phone"`
 
 	Password string `gorm:"not null" json:"-"`

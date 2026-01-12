@@ -2,12 +2,15 @@ package test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/myestatia/myestatia-go/internal/adapters/input/handler"
+	"github.com/myestatia/myestatia-go/internal/adapters/input/middleware"
 	"github.com/myestatia/myestatia-go/internal/application/service"
 	"github.com/myestatia/myestatia-go/internal/domain/entity"
 	"github.com/myestatia/myestatia-go/internal/domain/mocks"
@@ -18,17 +21,33 @@ import (
 func TestCreateProperty_Handler(t *testing.T) {
 	// GIVEN
 	mockRepo := new(mocks.PropertyRepositoryMock)
+	mockStorage := new(mocks.StorageServiceMock)
 	svc := service.NewPropertyService(mockRepo)
-	h := handler.NewPropertyHandler(svc)
+	h := handler.NewPropertyHandler(svc, nil, nil, mockStorage)
 
 	propReq := entity.Property{
 		Reference: "REF-HTTP",
 		CompanyID: "C1",
 		Title:     "Handler Property",
 	}
-	body, _ := json.Marshal(propReq)
+	// Create multipart request
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
 
-	req, _ := http.NewRequest(http.MethodPost, "/api/v1/properties", bytes.NewBuffer(body))
+	// Add data field
+	jsonData, _ := json.Marshal(propReq)
+	_ = writer.WriteField("data", string(jsonData))
+
+	// Close writer to finalize boundary
+	_ = writer.Close()
+
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/properties", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	// Add CompanyID to context
+	ctx := context.WithValue(req.Context(), middleware.CompanyIDKey, "C1")
+	req = req.WithContext(ctx)
+
 	rr := httptest.NewRecorder()
 
 	mockRepo.On("FindByReference", mock.Anything, "REF-HTTP").Return(nil, nil)
@@ -52,8 +71,9 @@ func TestCreateProperty_Handler(t *testing.T) {
 func TestGetPropertyByID_Handler_Success(t *testing.T) {
 	// GIVEN
 	mockRepo := new(mocks.PropertyRepositoryMock)
+	mockStorage := new(mocks.StorageServiceMock)
 	svc := service.NewPropertyService(mockRepo)
-	h := handler.NewPropertyHandler(svc)
+	h := handler.NewPropertyHandler(svc, nil, nil, mockStorage)
 
 	propID := "P1"
 	prop := &entity.Property{ID: propID, Reference: "REF1"}

@@ -38,6 +38,9 @@ func NewRouter(
 	//Property search filters (Public? Or Protected? Let's protect for now to enforce users)
 	mux.Handle("GET /api/v1/properties/search", protected(propertyHandler.SearchProperties))
 
+	// Public Property access
+	mux.HandleFunc("GET /api/v1/public/properties/", propertyHandler.GetPublicPropertyByID)
+
 	// CRUD Property
 	mux.Handle("POST /api/v1/properties", protected(propertyHandler.CreateProperty))
 	mux.Handle("GET /api/v1/properties", protected(propertyHandler.GetAllProperties))
@@ -45,6 +48,7 @@ func NewRouter(
 	mux.Handle("PUT /api/v1/properties/{id}", protected(propertyHandler.UpdateProperty))
 	mux.Handle("DELETE /api/v1/properties/{id}", protected(propertyHandler.DeleteProperty))
 	mux.Handle("GET /api/v1/properties/company/{company_id}", protected(propertyHandler.GetPropertiesByCompany))
+	mux.Handle("GET /api/v1/property-subtypes", protected(propertyHandler.ListSubtypes))
 
 	//CRUD Company
 	mux.Handle("POST /api/v1/companies", protected(companyHandler.CreateCompany))
