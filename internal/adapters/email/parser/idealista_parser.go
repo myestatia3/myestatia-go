@@ -68,13 +68,24 @@ func (p *IdealistaParser) Parse(subject, body string) (*entity.ParsedLead, error
 	fullText := strings.Join(textNodes, " ")
 
 	phoneRegex := regexp.MustCompile(`(\d{3}\s*\d{2}\s*\d{2}\s*\d{2}|\d{9})`)
-	if matches := phoneRegex.FindStringSubmatch(fullText); len(matches) > 0 {
-		lead.Phone = strings.ReplaceAll(matches[0], " ", "")
+	phoneLoc := phoneRegex.FindStringIndex(fullText)
+	if phoneLoc != nil {
+		lead.Phone = strings.ReplaceAll(fullText[phoneLoc[0]:phoneLoc[1]], " ", "")
+
+		// Search for email specifically after the phone number
+		// This avoids picking up the "From" or "To" emails in the header
+		emailRegex := regexp.MustCompile(`([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})`)
+		if matches := emailRegex.FindStringSubmatch(fullText[phoneLoc[1]:]); len(matches) > 0 {
+			lead.Email = matches[0]
+		}
 	}
 
-	emailRegex := regexp.MustCompile(`([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})`)
-	if matches := emailRegex.FindStringSubmatch(fullText); len(matches) > 0 {
-		lead.Email = matches[0]
+	// Fallback/Original logic if phone not found or email not found after phone
+	if lead.Email == "" {
+		emailRegex := regexp.MustCompile(`([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})`)
+		if matches := emailRegex.FindStringSubmatch(fullText); len(matches) > 0 {
+			lead.Email = matches[0]
+		}
 	}
 
 	// Extract message - look for the main message content
