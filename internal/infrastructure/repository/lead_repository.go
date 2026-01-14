@@ -32,7 +32,7 @@ func (r *leadRepository) Create(lead *entity.Lead) error {
 
 func (r *leadRepository) FindByID(id string) (*entity.Lead, error) {
 	var lead entity.Lead
-	if err := r.db.First(&lead, "id = ?", id).Error; err != nil {
+	if err := r.db.Preload("Property").First(&lead, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &lead, nil
@@ -40,8 +40,15 @@ func (r *leadRepository) FindByID(id string) (*entity.Lead, error) {
 
 func (r *leadRepository) FindAll() ([]entity.Lead, error) {
 	var leads []entity.Lead
-	if err := r.db.Find(&leads).Error; err != nil {
+	if err := r.db.Order("created_at DESC").Find(&leads).Error; err != nil {
 		return nil, err
+	}
+
+	for i := range leads {
+		leads[i].SuggestedPropertiesCount = 0
+		if leads[i].PropertyID != nil && *leads[i].PropertyID != "" && leads[i].Status != "discarded" {
+			leads[i].SuggestedPropertiesCount += 1
+		}
 	}
 	return leads, nil
 }
@@ -58,6 +65,7 @@ func (r *leadRepository) FindByEmail(ctx context.Context, email string) (*entity
 	var lead entity.Lead
 	query := r.db.WithContext(ctx).
 		Where("email = ?", email).
+		Preload("Property").
 		First(&lead)
 
 	if query.Error != nil {
@@ -74,9 +82,17 @@ func (r *leadRepository) FindByCompanyId(ctx context.Context, companyID string) 
 	var leads []entity.Lead
 	if err := r.db.WithContext(ctx).
 		Where("company_id = ?", companyID).
-		Preload("Company"). //Carga company por detrás
+		Preload("Company").       //Carga company por detrás
+		Order("created_at DESC"). // Newest first
 		Find(&leads).Error; err != nil {
 		return nil, err
+	}
+	// Calculate SuggestedPropertiesCount
+	for i := range leads {
+		leads[i].SuggestedPropertiesCount = 0
+		if leads[i].PropertyID != nil && *leads[i].PropertyID != "" && leads[i].Status != "discarded" {
+			leads[i].SuggestedPropertiesCount += 1
+		}
 	}
 	return leads, nil
 }

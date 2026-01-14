@@ -14,6 +14,8 @@ func NewRouter(
 	agentHandler *handler.AgentHandler,
 	messageHandler *handler.MessageHandler,
 	authHandler *handler.AuthHandler,
+	emailConfigHandler *handler.CompanyEmailConfigHandler,
+	googleOAuthHandler *handler.GoogleOAuthHandler,
 ) http.Handler {
 	mux := http.NewServeMux()
 
@@ -68,5 +70,19 @@ func NewRouter(
 	mux.Handle("GET /api/v1/lead/{id}/conversations", protected(messageHandler.GetConversations))
 	mux.Handle("POST /api/v1/conversations/{leadId}/messages", protected(messageHandler.SendMessage))
 
+	// Company Email Configuration (for MyAccount integration)
+	mux.Handle("POST /api/v1/companies/{id}/email-config", protected(emailConfigHandler.CreateEmailConfig))
+	mux.Handle("GET /api/v1/companies/{id}/email-config", protected(emailConfigHandler.GetEmailConfig))
+	mux.Handle("PUT /api/v1/companies/{id}/email-config", protected(emailConfigHandler.UpdateEmailConfig))
+	mux.Handle("DELETE /api/v1/companies/{id}/email-config", protected(emailConfigHandler.DeleteEmailConfig))
+	mux.Handle("POST /api/v1/companies/{id}/email-config/test", protected(emailConfigHandler.TestConnection))
+	mux.Handle("PATCH /api/v1/companies/{id}/email-config/toggle", protected(emailConfigHandler.ToggleEnabled))
+
+	// Google OAuth2 for Gmail (Public endpoints - no auth required for OAuth flow)
+	mux.HandleFunc("GET /api/v1/auth/google/connect", googleOAuthHandler.InitiateOAuth)
+	mux.HandleFunc("GET /api/v1/auth/google/callback", googleOAuthHandler.HandleCallback)
+	mux.Handle("POST /api/v1/auth/google/disconnect", protected(googleOAuthHandler.DisconnectGmail))
+
 	return mux
+
 }

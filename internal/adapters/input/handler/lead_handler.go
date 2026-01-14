@@ -140,31 +140,72 @@ func (h *LeadHandler) UpdateLead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Fetch existing lead first to avoid overwriting with zero values
+	existingLead, err := h.Service.FindByID(context.Background(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if existingLead == nil {
+		http.Error(w, "lead not found", http.StatusNotFound)
+		return
+	}
+
 	var req struct {
-		Name         string  `json:"name"`
-		Email        string  `json:"email"`
-		Phone        string  `json:"phone"`
-		Language     string  `json:"language"`
-		Budget       float64 `json:"budget"`
-		Zone         string  `json:"zone"`
-		PropertyType string  `json:"propertyType"`
+		Name         *string  `json:"name"`
+		Email        *string  `json:"email"`
+		Phone        *string  `json:"phone"`
+		Language     *string  `json:"language"`
+		Budget       *float64 `json:"budget"`
+		Zone         *string  `json:"zone"`
+		PropertyType *string  `json:"propertyType"`
+		Status       *string  `json:"status"`     // Added status
+		PropertyID   *string  `json:"propertyId"` // Added propertyId
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
 	}
 
-	lead := &entity.Lead{
-		ID:           id,
-		Name:         req.Name,
-		Email:        req.Email,
-		Phone:        req.Phone,
-		Language:     req.Language,
-		Budget:       req.Budget,
-		Zone:         req.Zone,
-		PropertyType: req.PropertyType,
+	// Partial update logic: we only update fields that are present (non-nil) in the request.
+	// This ensures that we don't overwrite existing data with empty values when the frontend
+	// sends a partial object (e.g., only updating 'status').
+	if req.Name != nil {
+		existingLead.Name = *req.Name
 	}
-	if err := h.Service.Update(context.Background(), lead); err != nil {
+	if req.Email != nil {
+		existingLead.Email = *req.Email
+	}
+	if req.Phone != nil {
+		existingLead.Phone = *req.Phone
+	}
+	if req.Language != nil {
+		existingLead.Language = *req.Language
+	}
+	if req.Budget != nil {
+		existingLead.Budget = *req.Budget
+	}
+	if req.Zone != nil {
+		existingLead.Zone = *req.Zone
+	}
+	if req.PropertyType != nil {
+		existingLead.PropertyType = *req.PropertyType
+	}
+	if req.Status != nil {
+		existingLead.Status = entity.LeadStatus(*req.Status)
+	}
+	if req.PropertyID != nil {
+		if *req.PropertyID != "" {
+			existingLead.PropertyID = req.PropertyID
+		} else {
+			// Handle empty string as unset if needed, or ignore.
+			// Currently assuming empty string means "unset" or invalid,
+			// but for safety we can explicitly set to nil if empty string is passed.
+			existingLead.PropertyID = nil
+		}
+	}
+
+	if err := h.Service.Update(context.Background(), existingLead); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
