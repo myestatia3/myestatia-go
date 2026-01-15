@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/myestatia/myestatia-go/internal/application/service"
 	"github.com/myestatia/myestatia-go/internal/domain/entity"
@@ -45,6 +46,9 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	// Normalize email to lowercase
+	req.Email = strings.ToLower(req.Email)
 
 	// 0. Check if agent exists
 	existingAgent, _ := h.agentService.GetByEmail(r.Context(), req.Email)
@@ -103,6 +107,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	// Normalize email to lowercase
+	req.Email = strings.ToLower(req.Email)
 
 	// 1. Find Agent by Email
 	agent, err := h.agentService.GetByEmail(r.Context(), req.Email)

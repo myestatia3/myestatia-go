@@ -174,6 +174,7 @@ func (h *LeadHandler) UpdateLead(w http.ResponseWriter, r *http.Request) {
 		existingLead.Name = *req.Name
 	}
 	if req.Email != nil {
+		*req.Email = strings.ToLower(*req.Email)
 		existingLead.Email = *req.Email
 	}
 	if req.Phone != nil {
