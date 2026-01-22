@@ -17,6 +17,7 @@ func NewRouter(
 	emailConfigHandler *handler.CompanyEmailConfigHandler,
 	googleOAuthHandler *handler.GoogleOAuthHandler,
 	passwordResetHandler *handler.PasswordResetHandler,
+	invitationHandler *handler.InvitationHandler,
 ) http.Handler {
 	mux := http.NewServeMux()
 
@@ -28,6 +29,11 @@ func NewRouter(
 	mux.HandleFunc("POST /api/v1/auth/forgot-password", passwordResetHandler.ForgotPassword)
 	mux.HandleFunc("POST /api/v1/auth/reset-password", passwordResetHandler.ResetPassword)
 	mux.HandleFunc("GET /api/v1/auth/validate-reset-token/{token}", passwordResetHandler.ValidateResetToken)
+
+	// Invitations (public)
+	mux.HandleFunc("POST /api/v1/invitations/request", invitationHandler.RequestInvitation)
+	mux.HandleFunc("GET /api/v1/invitations/validate/", invitationHandler.ValidateInvitation)
+	mux.HandleFunc("POST /api/v1/auth/register/", authHandler.RegisterWithToken)
 
 	// Helper to protect routes
 	protected := func(h http.HandlerFunc) http.Handler {

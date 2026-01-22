@@ -152,3 +152,55 @@ func (s *ResendEmailSender) SendPasswordResetEmail(to, token string) error {
 
 	return s.SendEmail(to, subject, body)
 }
+
+// SendInvitationEmail sends an invitation email via Resend
+func (s *ResendEmailSender) SendInvitationEmail(to, token, companyName string) error {
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:5173"
+	}
+
+	registrationURL := fmt.Sprintf("%s/register/%s", frontendURL, token)
+
+	subject := fmt.Sprintf("Your MyEstatia Registration Invitation from %s", companyName)
+	body := fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+        .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+        .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to MyEstatia!</h1>
+        </div>
+        <div class="content">
+            <p>Hello,</p>
+            <p>You have been invited to join <strong>MyEstatia</strong> by <strong>%s</strong>.</p>
+            <p>Click the button below to complete your registration:</p>
+            <p style="text-align: center;">
+                <a href="%s" class="button">Complete Registration</a>
+            </p>
+            <p>Or copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; color: #667eea;">%s</p>
+            <p><strong>This invitation will expire in 7 days.</strong></p>
+            <p>If you did not request this invitation, please ignore this email.</p>
+            <div class="footer">
+                <p>© 2025 MyEstatia. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+`, companyName, registrationURL, registrationURL)
+
+	return s.SendEmail(to, subject, body)
+}

@@ -12,14 +12,16 @@ import (
 )
 
 type AuthHandler struct {
-	agentService   *service.AgentService
-	companyService *service.CompanyService
+	agentService      *service.AgentService
+	companyService    *service.CompanyService
+	invitationService *service.InvitationService
 }
 
-func NewAuthHandler(agentService *service.AgentService, companyService *service.CompanyService) *AuthHandler {
+func NewAuthHandler(agentService *service.AgentService, companyService *service.CompanyService, invitationService *service.InvitationService) *AuthHandler {
 	return &AuthHandler{
-		agentService:   agentService,
-		companyService: companyService,
+		agentService:      agentService,
+		companyService:    companyService,
+		invitationService: invitationService,
 	}
 }
 
@@ -40,49 +42,76 @@ type AuthResponse struct {
 	Agent entity.Agent `json:"agent"`
 }
 
+// Register is now disabled - users must register via invitation
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Registration is by invitation only. Please request an invitation from your company.", http.StatusForbidden)
+}
+
+// RegisterWithToken handles registration with an invitation token
+func (h *AuthHandler) RegisterWithToken(w http.ResponseWriter, r *http.Request) {
+	// Extract token from URL path
+	// Expected format: /api/v1/auth/register/{token}
+	token := strings.TrimPrefix(r.URL.Path, "/api/v1/auth/register/")
+	if token == "" || token == r.URL.Path {
+		http.Error(w, "missing invitation token", http.StatusBadRequest)
+		return
+	}
+
 	var req RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Normalize email to lowercase
 	req.Email = strings.ToLower(req.Email)
 
-	// 0. Check if agent exists
+	invitation, err := h.invitationService.ValidateInvitation(r.Context(), token)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, "Invalid invitation token", http.StatusNotFound)
+			return
+		}
+		if strings.Contains(err.Error(), "already used") {
+			http.Error(w, "This invitation has already been used", http.StatusGone)
+			return
+		}
+		if strings.Contains(err.Error(), "expired") {
+			http.Error(w, "This invitation has expired", http.StatusGone)
+			return
+		}
+		http.Error(w, "Invalid invitation: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if invitation.Email != req.Email {
+		http.Error(w, "Email does not match invitation", http.StatusBadRequest)
+		return
+	}
+
 	existingAgent, _ := h.agentService.GetByEmail(r.Context(), req.Email)
 	if existingAgent != nil {
 		http.Error(w, "User with this email already exists", http.StatusConflict)
 		return
 	}
 
-	// 1. Create Company
-	company := &entity.Company{
-		Name:   req.CompanyName,
-		Email1: req.Email, // Ensure required field Email1 is set (using agent email as fallback)
-	}
-	// Capture the returned company which has the ID (whether verified existing or newly created)
-	createdCompany, _, err := h.companyService.Create(r.Context(), company)
-	if err != nil {
-		http.Error(w, "Failed to create company: "+err.Error(), http.StatusInternalServerError)
+	company, err := h.companyService.FindByID(r.Context(), invitation.CompanyID)
+	if err != nil || company == nil {
+		http.Error(w, "Company not found", http.StatusInternalServerError)
 		return
 	}
 
-	// 2. Hash Password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
 		return
 	}
 
-	// 3. Create Agent (linked to Company)
 	agent := &entity.Agent{
 		Name:      req.Name,
 		Email:     req.Email,
 		Password:  string(hashedPassword),
-		Role:      "admin", // First user is admin
-		CompanyID: createdCompany.ID,
+		Role:      "agent", // Default role for invited users
+		CompanyID: company.ID,
 	}
 
 	if _, _, err := h.agentService.Create(r.Context(), agent); err != nil {
@@ -90,8 +119,14 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 4. Generate Token
-	token, err := security.GenerateToken(agent.ID, agent.CompanyID, agent.Role)
+	// Delete invitation after successful registration
+	if err := h.invitationService.DeleteInvitation(r.Context(), token); err != nil {
+		// Log error but don't fail the registration
+		// The user is already created at this point
+	}
+
+	// Generate Token
+	token, err = security.GenerateToken(agent.ID, agent.CompanyID, agent.Role)
 	if err != nil {
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
 		return
@@ -108,23 +143,19 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Normalize email to lowercase
 	req.Email = strings.ToLower(req.Email)
 
-	// 1. Find Agent by Email
 	agent, err := h.agentService.GetByEmail(r.Context(), req.Email)
-	if err != nil || agent == nil { // Check for nil if repo returns nil on not found
+	if err != nil || agent == nil {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
 
-	// 2. Check Password
 	if err := bcrypt.CompareHashAndPassword([]byte(agent.Password), []byte(req.Password)); err != nil {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
 
-	// 3. Generate Token
 	token, err := security.GenerateToken(agent.ID, agent.CompanyID, agent.Role)
 	if err != nil {
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)

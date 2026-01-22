@@ -24,7 +24,14 @@ type Company struct {
 	PageLink       string `json:"page_link"`
 	WebDeveloper   string `json:"web_developer"`
 
+	MaxInvitations  int `json:"max_invitations" gorm:"default:3"`
+	UsedInvitations int `json:"used_invitations" gorm:"default:0"`
+
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+func (c *Company) AvailableInvitations() int {
+	return c.MaxInvitations - c.UsedInvitations
 }
