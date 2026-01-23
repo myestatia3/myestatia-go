@@ -136,7 +136,14 @@ func (h *PropertyHandler) DeleteProperty(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := h.Service.DeleteProperty(r.Context(), id); err != nil {
+	executorID, _ := r.Context().Value(middleware.AgentIDKey).(string)
+	executorRole, _ := r.Context().Value(middleware.RoleKey).(string)
+
+	if err := h.Service.DeleteProperty(r.Context(), id, executorID, executorRole); err != nil {
+		if strings.Contains(err.Error(), "unauthorized") {
+			http.Error(w, err.Error(), http.StatusForbidden)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -261,9 +268,16 @@ func (h *PropertyHandler) UpdateProperty(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := h.Service.UpdateProperty(context.Background(), &req); err != nil {
+	executorID, _ := r.Context().Value(middleware.AgentIDKey).(string)
+	executorRole, _ := r.Context().Value(middleware.RoleKey).(string)
+
+	if err := h.Service.UpdateProperty(r.Context(), &req, executorID, executorRole); err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		if strings.Contains(err.Error(), "unauthorized") {
+			http.Error(w, err.Error(), http.StatusForbidden)
 			return
 		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -13,6 +13,8 @@ const (
 	LeadStatusQualified LeadStatus = "qualified"
 	LeadStatusContacted LeadStatus = "contacted"
 	LeadStatusClosed    LeadStatus = "closed"
+	LeadStatusDismissed LeadStatus = "dismissed"
+	LeadStatusRejected  LeadStatus = "rejected"
 )
 
 type Lead struct {
