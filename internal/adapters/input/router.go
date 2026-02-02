@@ -18,6 +18,7 @@ func NewRouter(
 	googleOAuthHandler *handler.GoogleOAuthHandler,
 	passwordResetHandler *handler.PasswordResetHandler,
 	presentationHandler *handler.PresentationHandler,
+	integrationHandler *handler.IntegrationHandler,
 ) http.Handler {
 	mux := http.NewServeMux()
 
@@ -94,6 +95,10 @@ func NewRouter(
 	mux.Handle("POST /api/v1/presentations", protected(presentationHandler.CreatePresentation))
 	mux.HandleFunc("GET /api/v1/public/presentations/", presentationHandler.GetPresentation)
 	mux.Handle("GET /api/v1/presentations/matching-properties/{leadId}", protected(presentationHandler.GetMatchingProperties))
+
+	// Integrations
+	mux.Handle("POST /api/v1/integrations/{id}/test", protected(integrationHandler.TestConnection))
+	mux.Handle("POST /api/v1/integrations/{id}/preview", protected(integrationHandler.PreviewSync))
 
 	return mux
 

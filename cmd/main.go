@@ -182,7 +182,11 @@ func main() {
 	// Initialize auth handler (invitation service removed)
 	authHandler := handlers.NewAuthHandler(agentService, companyService)
 
-	mux := router.NewRouter(leadHandler, propertyHandler, companyHandler, agentHandler, messageHandler, authHandler, emailConfigHandler, googleOAuthHandler, passwordResetHandler, presentationHandler)
+	// Integration
+	integrationService := service.NewIntegrationService()
+	integrationHandler := handlers.NewIntegrationHandler(integrationService)
+
+	mux := router.NewRouter(leadHandler, propertyHandler, companyHandler, agentHandler, messageHandler, authHandler, emailConfigHandler, googleOAuthHandler, passwordResetHandler, presentationHandler, integrationHandler)
 
 	// Wrap the router with CORS middleware
 	// Add static file handler for uploads
