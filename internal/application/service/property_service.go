@@ -50,11 +50,60 @@ func (s *PropertyService) GetAllProperties(ctx context.Context) ([]entity.Proper
 	return s.repo.FindAll()
 }
 
-func (s *PropertyService) UpdateProperty(ctx context.Context, p *entity.Property) error {
-	return s.repo.Update(p)
+func (s *PropertyService) UpdateProperty(ctx context.Context, p *entity.Property, executorID, executorRole string) error {
+	existing, err := s.repo.FindByID(p.ID)
+	if err != nil {
+		return err
+	}
+	if existing == nil {
+		return errors.New("property not found")
+	}
+
+	// Permission check: Admin or Creator
+	isCreator := existing.CreatedByAgentID != nil && *existing.CreatedByAgentID == executorID
+	isAdmin := executorRole == "admin"
+
+	if !isCreator && !isAdmin {
+		return errors.New("unauthorized: only admin or creator can update this property")
+	}
+
+	// Tenemos que adaptar esto para que funcione con el update parcial correctamente
+	if p.Status != "" {
+		existing.Status = p.Status
+	}
+	if p.Title != "" {
+		existing.Title = p.Title
+	}
+	if p.Description != "" {
+		existing.Description = p.Description
+	}
+	if p.Price != 0 {
+		existing.Price = p.Price
+	}
+	// Critical fields that must NOT be cleared by partial update:
+	// CompanyID, Reference, CreatedByAgentID -> already in 'existing'
+
+	// Use existing as the object to save
+	return s.repo.Update(existing)
 }
 
-func (s *PropertyService) DeleteProperty(ctx context.Context, id string) error {
+func (s *PropertyService) DeleteProperty(ctx context.Context, id string, executorID, executorRole string) error {
+	existing, err := s.repo.FindByID(id)
+	if err != nil {
+		return err
+	}
+	if existing == nil {
+		return errors.New("property not found")
+	}
+
+	// Permission check: Admin or Creator
+	isCreator := existing.CreatedByAgentID != nil && *existing.CreatedByAgentID == executorID
+	isAdmin := executorRole == "admin"
+
+	if !isCreator && !isAdmin {
+		return errors.New("unauthorized: only admin or creator can delete this property")
+	}
+
 	return s.repo.Delete(id)
 }
 

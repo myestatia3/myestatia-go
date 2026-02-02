@@ -17,6 +17,7 @@ func NewRouter(
 	emailConfigHandler *handler.CompanyEmailConfigHandler,
 	googleOAuthHandler *handler.GoogleOAuthHandler,
 	passwordResetHandler *handler.PasswordResetHandler,
+	presentationHandler *handler.PresentationHandler,
 ) http.Handler {
 	mux := http.NewServeMux()
 
@@ -88,6 +89,11 @@ func NewRouter(
 	mux.HandleFunc("GET /api/v1/auth/google/connect", googleOAuthHandler.InitiateOAuth)
 	mux.HandleFunc("GET /api/v1/auth/google/callback", googleOAuthHandler.HandleCallback)
 	mux.Handle("POST /api/v1/auth/google/disconnect", protected(googleOAuthHandler.DisconnectGmail))
+
+	// Presentations
+	mux.Handle("POST /api/v1/presentations", protected(presentationHandler.CreatePresentation))
+	mux.HandleFunc("GET /api/v1/public/presentations/", presentationHandler.GetPresentation)
+	mux.Handle("GET /api/v1/presentations/matching-properties/{leadId}", protected(presentationHandler.GetMatchingProperties))
 
 	return mux
 
