@@ -44,17 +44,30 @@ func (m *MockClient) GetProperties(ctx context.Context, apiKey string, agencyID 
 	props := []Property{}
 	for i := 0; i < pageSize; i++ {
 		ref := fmt.Sprintf("R%d", rand.Intn(100000)+3000000)
+		agencyRef := fmt.Sprintf("AGY-%d", rand.Intn(10000)+1000)
 		props = append(props, Property{
 			Reference:   ref,
+			AgencyRef:   agencyRef,
 			Price:       rand.Intn(2000000) + 200000,
 			Currency:    "EUR",
 			Description: "Beautiful property in Costa del Sol with amazing sea views...",
 			Location:    "Marbella",
-			Type:        "Apartment",
-			Bedrooms:    rand.Intn(4) + 1,
-			Bathrooms:   rand.Intn(3) + 1,
-			Built:       rand.Intn(200) + 80,
-			MainImage:   fmt.Sprintf("https://picsum.photos/seed/%s/800/600", ref),
+			Country:     "Spain",
+			Province:    "Málaga",
+			Area:        "Costa del Sol",
+			PropertyType: PropertyTypeInfo{
+				NameType: "Apartment",
+				Type:     "Residential",
+				TypeId:   "1-1",
+			},
+			Status: PropertyStatus{
+				System: "Available",
+				En:     "Available",
+			},
+			Bedrooms:  rand.Intn(4) + 1,
+			Bathrooms: rand.Intn(3) + 1,
+			Built:     rand.Intn(200) + 80,
+			MainImage: fmt.Sprintf("https://picsum.photos/seed/%s/800/600", ref),
 			PropertyFeatures: PropertyFeatures{
 				Category: []FeatureCategory{
 					{Type: "Setting", Value: []string{"Close To Golf", "Close To Sea"}},

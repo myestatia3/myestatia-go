@@ -183,10 +183,15 @@ func main() {
 	authHandler := handlers.NewAuthHandler(agentService, companyService)
 
 	// Integration
-	integrationService := service.NewIntegrationService()
+	integrationService := service.NewIntegrationService(propertyRepo, agentRepo)
 	integrationHandler := handlers.NewIntegrationHandler(integrationService)
 
-	mux := router.NewRouter(leadHandler, propertyHandler, companyHandler, agentHandler, messageHandler, authHandler, emailConfigHandler, googleOAuthHandler, passwordResetHandler, presentationHandler, integrationHandler)
+	// Scheduler for nightly sync
+	schedulerService := service.NewSchedulerService(integrationService)
+	schedulerService.Start()
+	schedulerHandler := handlers.NewSchedulerHandler(schedulerService)
+
+	mux := router.NewRouter(leadHandler, propertyHandler, companyHandler, agentHandler, messageHandler, authHandler, emailConfigHandler, googleOAuthHandler, passwordResetHandler, presentationHandler, integrationHandler, schedulerHandler)
 
 	// Wrap the router with CORS middleware
 	// Add static file handler for uploads
@@ -217,6 +222,9 @@ func main() {
 	// Wait for interrupt signal
 	<-sigChan
 	log.Println("Received shutdown signal, stopping services...")
+
+	// Stop scheduler
+	schedulerService.Stop()
 
 	// Cancel worker manager context
 	cancel()

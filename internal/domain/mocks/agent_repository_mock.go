@@ -39,6 +39,19 @@ func (m *AgentRepositoryMock) Delete(id string) error {
 	return args.Error(0)
 }
 
+func (m *AgentRepositoryMock) FindByCompanyID(companyID string) ([]entity.Agent, error) {
+	args := m.Called(companyID)
+	return args.Get(0).([]entity.Agent), args.Error(1)
+}
+
+func (m *AgentRepositoryMock) FindAdminByCompanyID(companyID string) (*entity.Agent, error) {
+	args := m.Called(companyID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.Agent), args.Error(1)
+}
+
 func (m *AgentRepositoryMock) FindByEmail(ctx context.Context, email string) (*entity.Agent, error) {
 	args := m.Called(ctx, email)
 	if args.Get(0) == nil {

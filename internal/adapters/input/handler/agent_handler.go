@@ -71,6 +71,29 @@ func (h *AgentHandler) GetAllAgents(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(companies)
 }
 
+// GET /api/v1/agents/company/{companyId}
+func (h *AgentHandler) GetAgentsByCompanyID(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	companyID := strings.TrimPrefix(r.URL.Path, "/api/v1/agents/company/")
+	if companyID == "" {
+		http.Error(w, "Missing company id", http.StatusBadRequest)
+		return
+	}
+
+	agents, err := h.Service.FindByCompanyID(context.Background(), companyID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(agents)
+}
+
 // GET /api/v1/agents/{id}
 func (h *AgentHandler) GetAgentByID(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {

@@ -59,9 +59,7 @@ func (r *propertyRepository) FindByReference(ctx context.Context, ref string) (*
 	var p entity.Property
 	query := r.db.WithContext(ctx).Where("reference = ?", ref).First(&p)
 	if query.Error != nil {
-		if query.Error == gorm.ErrRecordNotFound {
-			return nil, nil
-		}
+		// Return gorm.ErrRecordNotFound directly for upsert logic
 		return nil, query.Error
 	}
 	return &p, nil
@@ -97,14 +95,25 @@ func (r *propertyRepository) Search(ctx context.Context, filter entity.PropertyF
 	}
 
 	if filter.Origin != nil && *filter.Origin != "" && *filter.Origin != "all" && *filter.Origin != "todos" {
-		origin := *filter.Origin
-		// Simple mapping if needed, e.g., "owned" -> "MANUAL"
-		if strings.ToUpper(origin) == "OWNED" {
-			origin = string(entity.OriginManual)
-		} else if strings.ToUpper(origin) == "RESALES" {
-			origin = "RESALES" // Or whatever constant is used for imports
+		origin := strings.ToLower(*filter.Origin)
+		// Map frontend values to database values - each portal has its own origin
+		switch origin {
+		case "resales":
+			query = query.Where("origin = ?", "RESALES")
+		case "inmobalia":
+			query = query.Where("origin = ?", "INMOBALIA")
+		case "mls":
+			query = query.Where("origin = ?", "MLS")
+		case "owned", "manual":
+			query = query.Where("origin = ?", entity.OriginManual) // MANUAL
+		default:
+			query = query.Where("LOWER(origin) = LOWER(?)", *filter.Origin)
 		}
-		query = query.Where("origin = ?", origin)
+	}
+
+	// Filter by Type - case insensitive (frontend uses lowercase, DB may use UPPERCASE)
+	if filter.Type != nil && *filter.Type != "" && *filter.Type != "all" {
+		query = query.Where("LOWER(type) = LOWER(?)", *filter.Type)
 	}
 
 	// Global Search Term

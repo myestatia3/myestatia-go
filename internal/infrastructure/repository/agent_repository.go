@@ -11,6 +11,8 @@ type AgentRepository interface {
 	Create(agent *entity.Agent) error
 	FindByID(id string) (*entity.Agent, error)
 	FindAll() ([]entity.Agent, error)
+	FindByCompanyID(companyID string) ([]entity.Agent, error)
+	FindAdminByCompanyID(companyID string) (*entity.Agent, error)
 	UpdatePartial(ctx context.Context, id string, fields map[string]interface{}) error
 	Delete(id string) error
 	FindByEmail(ctx context.Context, name string) (*entity.Agent, error)
@@ -42,6 +44,26 @@ func (r *agentRepository) FindAll() ([]entity.Agent, error) {
 		return nil, err
 	}
 	return companies, nil
+}
+
+func (r *agentRepository) FindByCompanyID(companyID string) ([]entity.Agent, error) {
+	var agents []entity.Agent
+	if err := r.db.Where("company_id = ?", companyID).Find(&agents).Error; err != nil {
+		return nil, err
+	}
+	return agents, nil
+}
+
+func (r *agentRepository) FindAdminByCompanyID(companyID string) (*entity.Agent, error) {
+	var agent entity.Agent
+	// Use Order and First to get the first admin (oldest by created_at) in case there are multiple
+	if err := r.db.Where("company_id = ? AND role = ?", companyID, "admin").Order("created_at ASC").First(&agent).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil // No admin found
+		}
+		return nil, err
+	}
+	return &agent, nil
 }
 
 func (r *agentRepository) UpdatePartial(ctx context.Context, id string, fields map[string]interface{}) error {

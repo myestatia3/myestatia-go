@@ -19,6 +19,7 @@ func NewRouter(
 	passwordResetHandler *handler.PasswordResetHandler,
 	presentationHandler *handler.PresentationHandler,
 	integrationHandler *handler.IntegrationHandler,
+	schedulerHandler *handler.SchedulerHandler,
 ) http.Handler {
 	mux := http.NewServeMux()
 
@@ -26,7 +27,7 @@ func NewRouter(
 	mux.HandleFunc("POST /api/v1/auth/register", authHandler.Register)
 	mux.HandleFunc("POST /api/v1/auth/login", authHandler.Login)
 
-	// Password Reset (Public endpoints)
+	// Password Reset
 	mux.HandleFunc("POST /api/v1/auth/forgot-password", passwordResetHandler.ForgotPassword)
 	mux.HandleFunc("POST /api/v1/auth/reset-password", passwordResetHandler.ResetPassword)
 	mux.HandleFunc("GET /api/v1/auth/validate-reset-token/{token}", passwordResetHandler.ValidateResetToken)
@@ -45,7 +46,7 @@ func NewRouter(
 	mux.Handle("GET /api/v1/leads/bycompany/{companyId}", protected(leadHandler.GetLeadByCompanyId))
 	mux.Handle("GET /api/v1/leads/byproperty/{propertyId}", protected(leadHandler.GetLeadByPropertyId))
 
-	//Property search filters (Public? Or Protected? Let's protect for now to enforce users)
+	//Property search filters
 	mux.Handle("GET /api/v1/properties/search", protected(propertyHandler.SearchProperties))
 
 	// Public Property access
@@ -70,6 +71,7 @@ func NewRouter(
 	//CRUD Agent
 	mux.Handle("POST /api/v1/agents", protected(agentHandler.CreateAgent))
 	mux.Handle("GET /api/v1/agents", protected(agentHandler.GetAllAgents))
+	mux.Handle("GET /api/v1/agents/company/{companyId}", protected(agentHandler.GetAgentsByCompanyID))
 	mux.Handle("GET /api/v1/agents/{id}", protected(agentHandler.GetAgentByID))
 	mux.Handle("PUT /api/v1/agents/{id}", protected(agentHandler.UpdateAgent))
 	mux.Handle("DELETE /api/v1/agents/{id}", protected(agentHandler.DeleteAgent))
@@ -99,6 +101,8 @@ func NewRouter(
 	// Integrations
 	mux.Handle("POST /api/v1/integrations/{id}/test", protected(integrationHandler.TestConnection))
 	mux.Handle("POST /api/v1/integrations/{id}/preview", protected(integrationHandler.PreviewSync))
+	mux.Handle("POST /api/v1/integrations/{id}/sync", protected(integrationHandler.SyncProperties))
+	mux.Handle("GET /api/v1/integrations/{id}/sync-status", protected(integrationHandler.GetSyncStatus))
 
 	return mux
 

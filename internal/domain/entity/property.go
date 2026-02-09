@@ -27,6 +27,7 @@ const (
 type PropertyFilter struct {
 	SearchTerm *string
 	Status     *string
+	Type       *string
 	Origin     *string
 	MinRooms   *int
 	MaxRooms   *int
@@ -70,6 +71,11 @@ type Property struct {
 	// New fields
 	EnergyCertificate string `json:"energyCertificate"`
 	YearBuilt         int    `json:"yearBuilt"`
+
+	// Resales-specific fields
+	OriginalPrice float64 `json:"originalPrice" gorm:"column:original_price"`
+	PlotM2        float64 `json:"plotM2" gorm:"column:plot_m2"`
+	TerraceM2     float64 `json:"terraceM2" gorm:"column:terrace_m2"`
 
 	// Frontend Integration Fields
 	Image                string `json:"image"`

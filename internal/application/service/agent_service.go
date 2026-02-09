@@ -53,6 +53,10 @@ func (s *AgentService) FindAll(ctx context.Context) ([]entity.Agent, error) {
 	return s.Repo.FindAll()
 }
 
+func (s *AgentService) FindByCompanyID(ctx context.Context, companyID string) ([]entity.Agent, error) {
+	return s.Repo.FindByCompanyID(companyID)
+}
+
 // Update parcial
 func (s *AgentService) UpdatePartial(ctx context.Context, id string, fields map[string]interface{}) error {
 	if id == "" {

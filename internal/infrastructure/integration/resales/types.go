@@ -19,19 +19,49 @@ type QueryInfo struct {
 
 type Property struct {
 	Reference        string           `json:"Reference"`
-	Price            interface{}      `json:"Price"` // Can be string or number in some APIs, best to handle carefully
+	AgencyRef        string           `json:"AgencyRef"` // Agency's internal reference - THIS is our unique Reference
+	Country          string           `json:"Country"`
+	Province         string           `json:"Province"`
+	Area             string           `json:"Area"`
+	Location         string           `json:"Location"`
+	SubLocation      string           `json:"SubLocation"`
+	PropertyType     PropertyTypeInfo `json:"PropertyType"`
+	Status           PropertyStatus   `json:"Status"`
+	Price            interface{}      `json:"Price"` // Can be string or number
+	OriginalPrice    interface{}      `json:"OriginalPrice"`
 	Currency         string           `json:"Currency"`
+	Bedrooms         interface{}      `json:"Bedrooms"`
+	Bathrooms        interface{}      `json:"Bathrooms"`
+	Built            interface{}      `json:"Built"`
+	Plot             interface{}      `json:"Plot"`
+	GardenPlot       interface{}      `json:"GardenPlot"`
+	Terrace          interface{}      `json:"Terrace"`
+	Pool             int              `json:"Pool"`
+	Parking          int              `json:"Parking"`
+	Garden           int              `json:"Garden"`
+	EnergyRated      string           `json:"EnergyRated"`
+	CO2Rated         string           `json:"CO2Rated"`
+	Dimensions       string           `json:"Dimensions"`
+	OwnProperty      string           `json:"OwnProperty"`
 	PropertyFeatures PropertyFeatures `json:"PropertyFeatures"`
 	Description      string           `json:"Description"`
 	MainImage        string           `json:"MainImage"`
 	Pictures         Pictures         `json:"Pictures"`
-	Location         string           `json:"Location"`
-	Type             string           `json:"Type"`
-	Bedrooms         interface{}      `json:"Bedrooms"`
-	Bathrooms        interface{}      `json:"Bathrooms"`
-	Plot             interface{}      `json:"Plot"`
-	Built            interface{}      `json:"Built"`
-	Terrace          interface{}      `json:"Terrace"`
+}
+
+type PropertyTypeInfo struct {
+	NameType   string `json:"NameType"`
+	Type       string `json:"Type"`
+	TypeId     string `json:"TypeId"`
+	Subtype1   string `json:"Subtype1,omitempty"`
+	SubtypeId1 string `json:"SubtypeId1,omitempty"`
+	Subtype2   string `json:"Subtype2,omitempty"`
+	SubtypeId2 string `json:"SubtypeId2,omitempty"`
+}
+
+type PropertyStatus struct {
+	System string `json:"system"`
+	En     string `json:"en"`
 }
 
 type PropertyFeatures struct {

@@ -325,6 +325,7 @@ func (h *PropertyHandler) SearchProperties(w http.ResponseWriter, r *http.Reques
 	filter := entity.PropertyFilter{
 		SearchTerm: getQueryString(q, "q"),
 		Status:     getQueryString(q, "status"),
+		Type:       getQueryString(q, "type"),
 		Origin:     getQueryString(q, "source"),
 		MinRooms:   getQueryInt(q, "minRooms"),
 		MaxRooms:   getQueryInt(q, "maxRooms"),
